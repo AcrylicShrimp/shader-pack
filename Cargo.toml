@@ -1,5 +1,6 @@
 [package]
 name = "shader-pack"
+description = "very strong and flexible shader language for game engines"
 version = "0.1.0"
 edition = "2021"
 
