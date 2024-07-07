@@ -20,6 +20,7 @@ parking_lot = "0.12"
 rand = "0.8"
 rustc-hash = "2"
 tokio = { version = "1", features = ["sync"] }
+unicode-xid = "0.2"
 wasm-bindgen = "0.2"
 
 [dependencies]
@@ -28,6 +29,7 @@ lazy_static.workspace = true
 parking_lot.workspace = true
 rustc-hash.workspace = true
 tokio.workspace = true
+unicode-xid.workspace = true
 wasm-bindgen.workspace = true
 
 [dev-dependencies]
