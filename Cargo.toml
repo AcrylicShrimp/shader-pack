@@ -4,4 +4,31 @@ description = "very strong and flexible shader language for game engines"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+lto = true
+
+[workspace]
+members = []
+
+[workspace.dependencies]
+colored = "2"
+lazy_static = "1"
+parking_lot = "0.12"
+rand = "0.8"
+rustc-hash = "2"
+tokio = { version = "1", features = ["sync"] }
+wasm-bindgen = "0.2"
+
 [dependencies]
+colored.workspace = true
+lazy_static.workspace = true
+parking_lot.workspace = true
+rustc-hash.workspace = true
+tokio.workspace = true
+wasm-bindgen.workspace = true
+
+[dev-dependencies]
+rand.workspace = true
