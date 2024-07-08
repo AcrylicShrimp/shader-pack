@@ -93,7 +93,7 @@ impl SourceFile {
     }
 
     pub fn slice(&self, span: Span) -> &str {
-        assert!(self.span.contains_span(span));
+        debug_assert!(self.span.contains_span(span));
         &self.content
             [(span.low() - self.span.low()) as usize..(span.high() - self.span.low()) as usize]
     }
@@ -276,6 +276,7 @@ mod tests {
         assert_eq!(file.slice(Span::new(span_low + 26, span_low + 30)), "bazz");
     }
 
+    #[cfg(debug_assertions)]
     #[test]
     #[should_panic]
     fn test_source_file_slice_out_of_bounds() {
