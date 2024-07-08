@@ -8,7 +8,7 @@ impl Span {
     pub const ZERO: Self = Self::new(0, 0);
 
     pub const fn new(low: u32, high: u32) -> Self {
-        assert!(low <= high);
+        debug_assert!(low <= high);
         Self { low, high }
     }
 
@@ -63,6 +63,7 @@ mod tests {
         Span::new(2, 3);
     }
 
+    #[cfg(debug_assertions)]
     #[test]
     #[should_panic]
     fn test_span_new_low_is_higher_than_high() {
