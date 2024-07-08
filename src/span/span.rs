@@ -79,31 +79,31 @@ mod tests {
     #[test]
     fn test_span_is_empty() {
         let span = Span::new(0, 0);
-        assert!(span.is_empty());
+        assert_eq!(span.is_empty(), true);
 
         let span = Span::new(0, 1);
-        assert!(!span.is_empty());
+        assert_eq!(span.is_empty(), false);
     }
 
     #[test]
     fn test_span_contains() {
         let span = Span::new(0, 5);
-        assert!(span.contains(0));
-        assert!(span.contains(4));
-        assert!(!span.contains(5));
+        assert_eq!(span.contains(0), true);
+        assert_eq!(span.contains(4), true);
+        assert_eq!(span.contains(5), false);
     }
 
     #[test]
     fn test_span_contains_span() {
         let span1 = Span::new(10, 15);
         let span2 = Span::new(11, 14);
-        assert!(span1.contains_span(span2));
+        assert_eq!(span1.contains_span(span2), true);
 
         let span3 = Span::new(5, 12);
-        assert!(!span1.contains_span(span3));
+        assert_eq!(!span1.contains_span(span3), true);
 
         let span4 = Span::new(13, 16);
-        assert!(!span1.contains_span(span4));
+        assert_eq!(!span1.contains_span(span4), true);
     }
 
     #[test]
