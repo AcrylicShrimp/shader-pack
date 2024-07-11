@@ -153,15 +153,16 @@ mod tests {
     }
 
     fn check_tokens<'a>(
-        span_low: u32,
+        mut span_low: u32,
         input: impl AsRef<str>,
-        mut expected: impl Iterator<Item = &'a Token>,
+        mut expected: impl Iterator<Item = TokenKind>,
     ) {
         let file = SourceFile::new(span_low, input.as_ref(), "test", None);
         let mut iter = token_iter(&file);
 
         while let Some(token) = iter.next() {
-            assert_eq!(&token, expected.next().unwrap());
+            assert_eq!(&token, &Token::new(span_low, expected.next().unwrap()));
+            span_low += token.len();
         }
 
         assert_eq!(None, expected.next());
@@ -170,7 +171,7 @@ mod tests {
     #[test]
     fn test_token_iter_empty() {
         let span_low = random_span_low();
-        check_tokens(span_low, "", [].iter());
+        check_tokens(span_low, "", [].into_iter());
     }
 
     #[test]
@@ -179,13 +180,10 @@ mod tests {
         check_tokens(
             span_low,
             "$$$",
-            [Token::new(
-                span_low + 0,
-                TokenKind::Unknown {
+            [TokenKind::Unknown {
                     symbol: Symbol::from_str("$$$"),
-                },
-            )]
-            .iter(),
+            }]
+            .into_iter(),
         );
     }
 
@@ -195,12 +193,140 @@ mod tests {
         check_tokens(
             span_low,
             "    \r\r\r\r\n\n\n\n\t\t\t\t",
-            [Token::new(span_low + 0, TokenKind::Whitespace { len: 16 })].iter(),
+            [TokenKind::Whitespace { len: 16 }].into_iter(),
+        );
+    }
+
+    #[test]
+    fn test_token_iter_string_literal() {
+        let span_low = random_span_low();
+        check_tokens(
+            span_low,
+            "\"hello, world!\" \"\\t\\r\\n\"",
+            [
+                TokenKind::StringLiteral {
+                    content: Symbol::from_str("\"hello, world!\""),
+                    unquoted_content: Symbol::from_str("hello, world!"),
+                    terminated: true,
+                },
+                TokenKind::Whitespace { len: 1 },
+                TokenKind::StringLiteral {
+                    content: Symbol::from_str("\"\\t\\r\\n\""),
+                    unquoted_content: Symbol::from_str("\\t\\r\\n"),
+                    terminated: true,
+                },
+            ]
+            .into_iter(),
         );
     }
 
     #[test]
     fn test_token_iter() {
-        // TODO: implement this test
+        let span_low = random_span_low();
+        let input = " \r\n\t# test\n(){}[].,:;@->=+=-=*=/=%=**=<<=>>=|=&=^===!=<><=>=+-*/%**<<>>|&^||&&~!identifier keyword 0b01_01suffix 0o01234_567suffix 0x0123456789_abcdefsuffix 01234_56789suffix 0123456789.0123456789e-0123456789suffix \"hello, world\" \"hello, world";
+        check_tokens(
+            span_low,
+            input,
+            [
+                TokenKind::Whitespace { len: 4 },
+                TokenKind::Comment { len: 6 },
+                TokenKind::Whitespace { len: 1 },
+                TokenKind::OpenParen,
+                TokenKind::CloseParen,
+                TokenKind::OpenBrace,
+                TokenKind::CloseBrace,
+                TokenKind::OpenBracket,
+                TokenKind::CloseBracket,
+                TokenKind::Dot,
+                TokenKind::Comma,
+                TokenKind::Colon,
+                TokenKind::Semicolon,
+                TokenKind::At,
+                TokenKind::Arrow,
+                TokenKind::Assign,
+                TokenKind::AssignAdd,
+                TokenKind::AssignSub,
+                TokenKind::AssignMul,
+                TokenKind::AssignDiv,
+                TokenKind::AssignMod,
+                TokenKind::AssignPow,
+                TokenKind::AssignShl,
+                TokenKind::AssignShr,
+                TokenKind::AssignBitOr,
+                TokenKind::AssignBitAnd,
+                TokenKind::AssignBitXor,
+                TokenKind::Eq,
+                TokenKind::Ne,
+                TokenKind::Lt,
+                TokenKind::Gt,
+                TokenKind::Le,
+                TokenKind::Ge,
+                TokenKind::Add,
+                TokenKind::Sub,
+                TokenKind::Mul,
+                TokenKind::Div,
+                TokenKind::Mod,
+                TokenKind::Pow,
+                TokenKind::Shl,
+                TokenKind::Shr,
+                TokenKind::BitOr,
+                TokenKind::BitAnd,
+                TokenKind::BitXor,
+                TokenKind::LogOr,
+                TokenKind::LogAnd,
+                TokenKind::BitNot,
+                TokenKind::LogNot,
+                TokenKind::Id {
+                    symbol: Symbol::from_str("identifier"),
+                },
+                TokenKind::Whitespace { len: 1 },
+                TokenKind::Id {
+                    symbol: Symbol::from_str("keyword"),
+                },
+                TokenKind::Whitespace { len: 1 },
+                TokenKind::NumberLiteral {
+                    kind: TokenNumberLiteralKind::IntegerBinary,
+                    content: Symbol::from_str("0b01_01"),
+                    suffix: Some(Symbol::from_str("suffix")),
+                },
+                TokenKind::Whitespace { len: 1 },
+                TokenKind::NumberLiteral {
+                    kind: TokenNumberLiteralKind::IntegerOctal,
+                    content: Symbol::from_str("0o01234_567"),
+                    suffix: Some(Symbol::from_str("suffix")),
+                },
+                TokenKind::Whitespace { len: 1 },
+                TokenKind::NumberLiteral {
+                    kind: TokenNumberLiteralKind::IntegerHexadecimal,
+                    content: Symbol::from_str("0x0123456789_abcdef"),
+                    suffix: Some(Symbol::from_str("suffix")),
+                },
+                TokenKind::Whitespace { len: 1 },
+                TokenKind::NumberLiteral {
+                    kind: TokenNumberLiteralKind::IntegerDecimal,
+                    content: Symbol::from_str("01234_56789"),
+                    suffix: Some(Symbol::from_str("suffix")),
+                },
+                TokenKind::Whitespace { len: 1 },
+                TokenKind::NumberLiteral {
+                    kind: TokenNumberLiteralKind::Float,
+                    content: Symbol::from_str("0123456789.0123456789e-0123456789"),
+                    suffix: Some(Symbol::from_str("suffix")),
+                },
+                TokenKind::Whitespace { len: 1 },
+                TokenKind::StringLiteral {
+                    content: Symbol::from_str("\"hello, world\""),
+                    unquoted_content: Symbol::from_str("hello, world"),
+                    terminated: true,
+                },
+                TokenKind::Whitespace { len: 1 },
+                TokenKind::StringLiteral {
+                    content: Symbol::from_str("\"hello, world"),
+                    unquoted_content: Symbol::from_str("hello, world"),
+                    terminated: false,
+                },
+            ]
+            .into_iter(),
+        );
     }
 }
