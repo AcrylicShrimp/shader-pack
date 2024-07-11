@@ -73,7 +73,7 @@ fn from_low_token(token: LowToken, span_low: u32, file: &SourceFile) -> Token {
         LowTokenKind::Comma => TokenKind::Comma,
         LowTokenKind::Colon => TokenKind::Colon,
         LowTokenKind::Semicolon => TokenKind::Semicolon,
-        LowTokenKind::Eq => TokenKind::Eq,
+        LowTokenKind::Eq => TokenKind::Assign,
         LowTokenKind::Bang => TokenKind::LogNot,
         LowTokenKind::At => TokenKind::At,
         LowTokenKind::Lt => TokenKind::Lt,
@@ -181,7 +181,7 @@ mod tests {
             span_low,
             "$$$",
             [TokenKind::Unknown {
-                    symbol: Symbol::from_str("$$$"),
+                symbol: Symbol::from_str("$$$"),
             }]
             .into_iter(),
         );
