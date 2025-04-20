@@ -162,7 +162,7 @@ mod tests {
 
         while let Some(token) = iter.next() {
             assert_eq!(&token, &Token::new(span_low, expected.next().unwrap()));
-            span_low += token.len();
+            span_low += token.kind.len();
         }
 
         assert_eq!(None, expected.next());

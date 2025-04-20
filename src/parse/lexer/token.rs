@@ -14,11 +14,7 @@ impl Token {
     }
 
     pub fn span(self) -> Span {
-        self.kind.span(self.span_low)
-    }
-
-    pub fn len(self) -> u32 {
-        self.kind.len()
+        Span::new(self.span_low, self.span_low + self.kind.len())
     }
 
     pub fn glue(lhs: &Self, rhs: &Self) -> Option<Self> {
@@ -323,7 +319,7 @@ mod tests {
 
         for token in &buf {
             println!("- unglued: {:?}", token);
-            assert_eq!(token.len(), 1);
+            assert_eq!(token.kind.len(), 1);
         }
 
         let mut glued = buf.pop_front().unwrap();

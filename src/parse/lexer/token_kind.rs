@@ -1,5 +1,5 @@
 use super::TokenNumberLiteralKind;
-use crate::{span::Span, symbol::Symbol};
+use crate::symbol::Symbol;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenKind {
@@ -107,70 +107,66 @@ pub enum TokenKind {
 }
 
 impl TokenKind {
-    pub fn span(self, span_low: u32) -> Span {
-        Span::new(span_low, span_low + self.len())
-    }
-
     pub fn len(self) -> u32 {
         match self {
-            TokenKind::Unknown { symbol } => symbol.to_str().len() as u32,
-            TokenKind::Whitespace { len } => len,
-            TokenKind::Comment { len } => len,
-            TokenKind::OpenParen => 1,
-            TokenKind::CloseParen => 1,
-            TokenKind::OpenBrace => 1,
-            TokenKind::CloseBrace => 1,
-            TokenKind::OpenBracket => 1,
-            TokenKind::CloseBracket => 1,
-            TokenKind::Dot => 1,
-            TokenKind::Comma => 1,
-            TokenKind::Colon => 1,
-            TokenKind::Semicolon => 1,
-            TokenKind::At => 1,
-            TokenKind::Arrow => 2,
-            TokenKind::Assign => 1,
-            TokenKind::AssignAdd => 2,
-            TokenKind::AssignSub => 2,
-            TokenKind::AssignMul => 2,
-            TokenKind::AssignDiv => 2,
-            TokenKind::AssignMod => 2,
-            TokenKind::AssignPow => 3,
-            TokenKind::AssignShl => 3,
-            TokenKind::AssignShr => 3,
-            TokenKind::AssignBitOr => 2,
-            TokenKind::AssignBitAnd => 2,
-            TokenKind::AssignBitXor => 2,
-            TokenKind::Eq => 2,
-            TokenKind::Ne => 2,
-            TokenKind::Lt => 1,
-            TokenKind::Gt => 1,
-            TokenKind::Le => 2,
-            TokenKind::Ge => 2,
-            TokenKind::Add => 1,
-            TokenKind::Sub => 1,
-            TokenKind::Mul => 1,
-            TokenKind::Div => 1,
-            TokenKind::Mod => 1,
-            TokenKind::Pow => 2,
-            TokenKind::Shl => 2,
-            TokenKind::Shr => 2,
-            TokenKind::BitOr => 1,
-            TokenKind::BitAnd => 1,
-            TokenKind::BitXor => 1,
-            TokenKind::LogOr => 2,
-            TokenKind::LogAnd => 2,
-            TokenKind::BitNot => 1,
-            TokenKind::LogNot => 1,
-            TokenKind::Id { symbol } => symbol.to_str().len() as u32,
-            TokenKind::BoolLiteral { content } => content.to_str().len() as u32,
-            TokenKind::NumberLiteral {
+            Self::Unknown { symbol } => symbol.to_str().len() as u32,
+            Self::Whitespace { len } => len,
+            Self::Comment { len } => len,
+            Self::OpenParen => 1,
+            Self::CloseParen => 1,
+            Self::OpenBrace => 1,
+            Self::CloseBrace => 1,
+            Self::OpenBracket => 1,
+            Self::CloseBracket => 1,
+            Self::Dot => 1,
+            Self::Comma => 1,
+            Self::Colon => 1,
+            Self::Semicolon => 1,
+            Self::At => 1,
+            Self::Arrow => 2,
+            Self::Assign => 1,
+            Self::AssignAdd => 2,
+            Self::AssignSub => 2,
+            Self::AssignMul => 2,
+            Self::AssignDiv => 2,
+            Self::AssignMod => 2,
+            Self::AssignPow => 3,
+            Self::AssignShl => 3,
+            Self::AssignShr => 3,
+            Self::AssignBitOr => 2,
+            Self::AssignBitAnd => 2,
+            Self::AssignBitXor => 2,
+            Self::Eq => 2,
+            Self::Ne => 2,
+            Self::Lt => 1,
+            Self::Gt => 1,
+            Self::Le => 2,
+            Self::Ge => 2,
+            Self::Add => 1,
+            Self::Sub => 1,
+            Self::Mul => 1,
+            Self::Div => 1,
+            Self::Mod => 1,
+            Self::Pow => 2,
+            Self::Shl => 2,
+            Self::Shr => 2,
+            Self::BitOr => 1,
+            Self::BitAnd => 1,
+            Self::BitXor => 1,
+            Self::LogOr => 2,
+            Self::LogAnd => 2,
+            Self::BitNot => 1,
+            Self::LogNot => 1,
+            Self::Id { symbol } => symbol.to_str().len() as u32,
+            Self::BoolLiteral { content } => content.to_str().len() as u32,
+            Self::NumberLiteral {
                 content, suffix, ..
             } => {
                 let content_len = content.to_str().len();
                 let suffix_len = suffix.map_or(0, |s| s.to_str().len());
                 (content_len + suffix_len) as u32
             }
-            TokenKind::StringLiteral { content, .. } => content.to_str().len() as u32,
+            Self::StringLiteral { content, .. } => content.to_str().len() as u32,
         }
     }
 }
