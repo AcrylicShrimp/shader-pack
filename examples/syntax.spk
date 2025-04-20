@@ -1,10 +1,4 @@
-# shader-pack
 
-Very strong and flexible shader language for game engines.
-
-## Example
-
-```
 # From Uniform Bindings
 in main_tex: t2; # 2D Texture
 in second_tex: t2;
@@ -51,8 +45,15 @@ comptime if ("flag1" and "flag2") or not "flag3" {
 
 # defining a pass, with mode = "Base"
 # this `mode` tag controls how the pass is used by the engine
+# it means that the output type of this pass will be determined by the engine, using that `mode` flag
 @mode = "Base"
 pass first {
+    # pass-level input
+    # some engine provides extra input to the pass
+    # note that all inputs will be hoisted, so the order is not important
+    # and, their name must be unique
+    in some_input: f3;
+
     # vertex program
     vertex {
         # ...
@@ -86,6 +87,11 @@ pass first {
 @mode = "Additive"
 pass second {
     vertex {
+        let var;
+        let var: type;
+        let var = expr;
+        let var: type = expr;
+
         # ...
     }
 
@@ -106,4 +112,3 @@ comptime if "flag5" {
 } else {
     fn test() { }
 }
-```
