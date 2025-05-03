@@ -4,9 +4,8 @@ mod node_id_allocator;
 pub use node_id::*;
 pub use node_id_allocator::*;
 
-use crate::{span::Span, symbol::Symbol};
-
 use super::lexer::TokenKind;
+use crate::{span::Span, symbol::Symbol};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AstShaderPack {
@@ -57,6 +56,7 @@ pub struct AstCompTime<T> {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AstCompTimeKind<T> {
+    Invalid,
     If(AstCompTimeIf<T>),
     Loop(AstCompTimeLoop<T>),
 }
@@ -69,7 +69,7 @@ pub enum AstCompTimeKind<T> {
 pub struct AstCompTimeIf<T> {
     pub node_id: NodeId,
     pub span: Span,
-    pub if_part: Vec<AstCompTimeIfPart<T>>,
+    pub if_part: AstCompTimeIfPart<T>,
     pub else_if_parts: Vec<AstCompTimeElseIfPart<T>>,
     pub else_part: Option<AstCompTimeElsePart<T>>,
 }
@@ -110,20 +110,25 @@ pub struct AstCompTimeIfPredicateExpr {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AstCompTimeIfPredicateExprKind {
-    Or(AstCompTimeIfPredicateExprOr),
+    Invalid,
+    Single(AstCompTimeIfPredicateExprSingle),
     And(AstCompTimeIfPredicateExprAnd),
-    Not(AstCompTimeIfPredicateExprNot),
-    Flag(AstCompTimeIfPredicateExprFlag),
-    Paren(AstCompTimeIfPredicateExprParen),
+    Or(AstCompTimeIfPredicateExprOr),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AstCompTimeIfPredicateExprOr {
+pub struct AstCompTimeIfPredicateExprSingle {
     pub node_id: NodeId,
     pub span: Span,
-    pub lhs: Box<AstCompTimeIfPredicateExpr>,
-    pub keyword_or: AstKeyword,
-    pub rhs: Box<AstCompTimeIfPredicateExpr>,
+    pub kind: AstCompTimeIfPredicateExprSingleKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum AstCompTimeIfPredicateExprSingleKind {
+    Invalid,
+    Flag(AstCompTimeIfPredicateExprFlag),
+    Paren(AstCompTimeIfPredicateExprParen),
+    Not(AstCompTimeIfPredicateExprNot),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -136,10 +141,11 @@ pub struct AstCompTimeIfPredicateExprAnd {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AstCompTimeIfPredicateExprNot {
+pub struct AstCompTimeIfPredicateExprOr {
     pub node_id: NodeId,
     pub span: Span,
-    pub keyword_not: AstKeyword,
+    pub lhs: Box<AstCompTimeIfPredicateExpr>,
+    pub keyword_or: AstKeyword,
     pub rhs: Box<AstCompTimeIfPredicateExpr>,
 }
 
@@ -157,6 +163,14 @@ pub struct AstCompTimeIfPredicateExprParen {
     pub punc_open_paren: AstPunc,
     pub expr: Box<AstCompTimeIfPredicateExpr>,
     pub punc_close_paren: AstPunc,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AstCompTimeIfPredicateExprNot {
+    pub node_id: NodeId,
+    pub span: Span,
+    pub keyword_not: AstKeyword,
+    pub expr: Box<AstCompTimeIfPredicateExpr>,
 }
 
 /// Example:
@@ -332,18 +346,13 @@ pub struct AstStatementAssignment {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AstAssignmentOp {
-    pub span_low: u32,
+    pub span: Span,
     pub kind: AstAssignmentOpKind,
-}
-
-impl AstAssignmentOp {
-    pub fn span(self) -> Span {
-        Span::new(self.span_low, self.span_low + self.kind.len())
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AstAssignmentOpKind {
+    Invalid,
     /// `=`
     Assign,
     /// `+=`
@@ -370,35 +379,16 @@ pub enum AstAssignmentOpKind {
     AssignBitXor,
 }
 
-impl AstAssignmentOpKind {
-    pub fn len(self) -> u32 {
-        match self {
-            Self::Assign => 1,
-            Self::AssignAdd => 2,
-            Self::AssignSub => 2,
-            Self::AssignMul => 2,
-            Self::AssignDiv => 2,
-            Self::AssignMod => 2,
-            Self::AssignPow => 3,
-            Self::AssignShl => 3,
-            Self::AssignShr => 3,
-            Self::AssignBitOr => 2,
-            Self::AssignBitAnd => 2,
-            Self::AssignBitXor => 2,
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AstExpr {
     pub node_id: NodeId,
     pub span: Span,
     pub kind: AstExprKind,
-    pub punc_semicolon: AstPunc,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AstExprKind {
+    Invalid,
     Binary(AstBinaryExpr),
     Unary(AstUnaryExpr),
     // TODO
@@ -415,18 +405,13 @@ pub struct AstBinaryExpr {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct AstBinaryExprOp {
-    pub span_low: u32,
+    pub span: Span,
     pub kind: AstBinaryExprOpKind,
-}
-
-impl AstBinaryExprOp {
-    pub fn span(self) -> Span {
-        Span::new(self.span_low, self.span_low + self.kind.len())
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AstBinaryExprOpKind {
+    Invalid,
     /// `==`
     Eq,
     /// `!=`
@@ -467,20 +452,6 @@ pub enum AstBinaryExprOpKind {
     LogAnd,
 }
 
-impl AstBinaryExprOpKind {
-    pub fn len(self) -> u32 {
-        match self {
-            Self::Eq | Self::Ne | Self::Lt | Self::Ge => 2,
-            Self::Gt | Self::Le => 1,
-            Self::Add | Self::Sub | Self::Mul | Self::Div | Self::Mod => 1,
-            Self::Pow => 2,
-            Self::Shl | Self::Shr => 2,
-            Self::BitOr | Self::BitAnd | Self::BitXor => 1,
-            Self::LogOr | Self::LogAnd => 2,
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AstUnaryExpr {
     pub node_id: NodeId,
@@ -491,18 +462,13 @@ pub struct AstUnaryExpr {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct AstUnaryExprOp {
-    pub span_low: u32,
+    pub span: Span,
     pub kind: AstUnaryExprOpKind,
-}
-
-impl AstUnaryExprOp {
-    pub fn span(self) -> Span {
-        Span::new(self.span_low, self.span_low + self.kind.len())
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AstUnaryExprOpKind {
+    Invalid,
     /// `+`
     Pos,
     /// `-`
@@ -513,28 +479,15 @@ pub enum AstUnaryExprOpKind {
     BitNot,
 }
 
-impl AstUnaryExprOpKind {
-    pub fn len(self) -> u32 {
-        match self {
-            Self::Pos | Self::Neg | Self::LogNot | Self::BitNot => 1,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct AstPunc {
-    pub span_low: u32,
+    pub span: Span,
     pub kind: AstPuncKind,
-}
-
-impl AstPunc {
-    pub fn span(self) -> Span {
-        Span::new(self.span_low, self.span_low + self.kind.len())
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AstPuncKind {
+    Invalid,
     OpenParen,
     CloseParen,
     OpenBrace,
@@ -583,110 +536,61 @@ pub enum AstPuncKind {
 }
 
 impl AstPuncKind {
-    pub fn len(self) -> u32 {
+    pub fn matches_token_kind(self, token_kind: TokenKind) -> bool {
         match self {
-            Self::OpenParen => 1,
-            Self::CloseParen => 1,
-            Self::OpenBrace => 1,
-            Self::CloseBrace => 1,
-            Self::OpenBracket => 1,
-            Self::CloseBracket => 1,
-            Self::Dot => 1,
-            Self::Comma => 1,
-            Self::Colon => 1,
-            Self::Semicolon => 1,
-            Self::At => 1,
-            Self::Arrow => 2,
-            Self::Assign => 1,
-            Self::AssignAdd => 2,
-            Self::AssignSub => 2,
-            Self::AssignMul => 2,
-            Self::AssignDiv => 2,
-            Self::AssignMod => 2,
-            Self::AssignPow => 3,
-            Self::AssignShl => 3,
-            Self::AssignShr => 3,
-            Self::AssignBitOr => 2,
-            Self::AssignBitAnd => 2,
-            Self::AssignBitXor => 2,
-            Self::Eq => 2,
-            Self::Ne => 2,
-            Self::Lt => 1,
-            Self::Gt => 1,
-            Self::Le => 2,
-            Self::Ge => 2,
-            Self::Add => 1,
-            Self::Sub => 1,
-            Self::Mul => 1,
-            Self::Div => 1,
-            Self::Mod => 1,
-            Self::Pow => 2,
-            Self::Shl => 2,
-            Self::Shr => 2,
-            Self::BitOr => 1,
-            Self::BitAnd => 1,
-            Self::BitXor => 1,
-            Self::LogOr => 2,
-            Self::LogAnd => 2,
-            Self::BitNot => 1,
-            Self::LogNot => 1,
-        }
-    }
-
-    pub fn into_token_kind(self) -> TokenKind {
-        match self {
-            AstPuncKind::OpenParen => TokenKind::OpenParen,
-            AstPuncKind::CloseParen => TokenKind::CloseParen,
-            AstPuncKind::OpenBrace => TokenKind::OpenBrace,
-            AstPuncKind::CloseBrace => TokenKind::CloseBrace,
-            AstPuncKind::OpenBracket => TokenKind::OpenBracket,
-            AstPuncKind::CloseBracket => TokenKind::CloseBracket,
-            AstPuncKind::Dot => TokenKind::Dot,
-            AstPuncKind::Comma => TokenKind::Comma,
-            AstPuncKind::Colon => TokenKind::Colon,
-            AstPuncKind::Semicolon => TokenKind::Semicolon,
-            AstPuncKind::At => TokenKind::At,
-            AstPuncKind::Arrow => TokenKind::Arrow,
-            AstPuncKind::Assign => TokenKind::Assign,
-            AstPuncKind::AssignAdd => TokenKind::AssignAdd,
-            AstPuncKind::AssignSub => TokenKind::AssignSub,
-            AstPuncKind::AssignMul => TokenKind::AssignMul,
-            AstPuncKind::AssignDiv => TokenKind::AssignDiv,
-            AstPuncKind::AssignMod => TokenKind::AssignMod,
-            AstPuncKind::AssignPow => TokenKind::AssignPow,
-            AstPuncKind::AssignShl => TokenKind::AssignShl,
-            AstPuncKind::AssignShr => TokenKind::AssignShr,
-            AstPuncKind::AssignBitOr => TokenKind::AssignBitOr,
-            AstPuncKind::AssignBitAnd => TokenKind::AssignBitAnd,
-            AstPuncKind::AssignBitXor => TokenKind::AssignBitXor,
-            AstPuncKind::Eq => TokenKind::Eq,
-            AstPuncKind::Ne => TokenKind::Ne,
-            AstPuncKind::Lt => TokenKind::Lt,
-            AstPuncKind::Gt => TokenKind::Gt,
-            AstPuncKind::Le => TokenKind::Le,
-            AstPuncKind::Ge => TokenKind::Ge,
-            AstPuncKind::Add => TokenKind::Add,
-            AstPuncKind::Sub => TokenKind::Sub,
-            AstPuncKind::Mul => TokenKind::Mul,
-            AstPuncKind::Div => TokenKind::Div,
-            AstPuncKind::Mod => TokenKind::Mod,
-            AstPuncKind::Pow => TokenKind::Pow,
-            AstPuncKind::Shl => TokenKind::Shl,
-            AstPuncKind::Shr => TokenKind::Shr,
-            AstPuncKind::BitOr => TokenKind::BitOr,
-            AstPuncKind::BitAnd => TokenKind::BitAnd,
-            AstPuncKind::BitXor => TokenKind::BitXor,
-            AstPuncKind::LogOr => TokenKind::LogOr,
-            AstPuncKind::LogAnd => TokenKind::LogAnd,
-            AstPuncKind::BitNot => TokenKind::BitNot,
-            AstPuncKind::LogNot => TokenKind::LogNot,
+            AstPuncKind::Invalid => false,
+            AstPuncKind::OpenParen => token_kind == TokenKind::OpenParen,
+            AstPuncKind::CloseParen => token_kind == TokenKind::CloseParen,
+            AstPuncKind::OpenBrace => token_kind == TokenKind::OpenBrace,
+            AstPuncKind::CloseBrace => token_kind == TokenKind::CloseBrace,
+            AstPuncKind::OpenBracket => token_kind == TokenKind::OpenBracket,
+            AstPuncKind::CloseBracket => token_kind == TokenKind::CloseBracket,
+            AstPuncKind::Dot => token_kind == TokenKind::Dot,
+            AstPuncKind::Comma => token_kind == TokenKind::Comma,
+            AstPuncKind::Colon => token_kind == TokenKind::Colon,
+            AstPuncKind::Semicolon => token_kind == TokenKind::Semicolon,
+            AstPuncKind::At => token_kind == TokenKind::At,
+            AstPuncKind::Arrow => token_kind == TokenKind::Arrow,
+            AstPuncKind::Assign => token_kind == TokenKind::Assign,
+            AstPuncKind::AssignAdd => token_kind == TokenKind::AssignAdd,
+            AstPuncKind::AssignSub => token_kind == TokenKind::AssignSub,
+            AstPuncKind::AssignMul => token_kind == TokenKind::AssignMul,
+            AstPuncKind::AssignDiv => token_kind == TokenKind::AssignDiv,
+            AstPuncKind::AssignMod => token_kind == TokenKind::AssignMod,
+            AstPuncKind::AssignPow => token_kind == TokenKind::AssignPow,
+            AstPuncKind::AssignShl => token_kind == TokenKind::AssignShl,
+            AstPuncKind::AssignShr => token_kind == TokenKind::AssignShr,
+            AstPuncKind::AssignBitOr => token_kind == TokenKind::AssignBitOr,
+            AstPuncKind::AssignBitAnd => token_kind == TokenKind::AssignBitAnd,
+            AstPuncKind::AssignBitXor => token_kind == TokenKind::AssignBitXor,
+            AstPuncKind::Eq => token_kind == TokenKind::Eq,
+            AstPuncKind::Ne => token_kind == TokenKind::Ne,
+            AstPuncKind::Lt => token_kind == TokenKind::Lt,
+            AstPuncKind::Gt => token_kind == TokenKind::Gt,
+            AstPuncKind::Le => token_kind == TokenKind::Le,
+            AstPuncKind::Ge => token_kind == TokenKind::Ge,
+            AstPuncKind::Add => token_kind == TokenKind::Add,
+            AstPuncKind::Sub => token_kind == TokenKind::Sub,
+            AstPuncKind::Mul => token_kind == TokenKind::Mul,
+            AstPuncKind::Div => token_kind == TokenKind::Div,
+            AstPuncKind::Mod => token_kind == TokenKind::Mod,
+            AstPuncKind::Pow => token_kind == TokenKind::Pow,
+            AstPuncKind::Shl => token_kind == TokenKind::Shl,
+            AstPuncKind::Shr => token_kind == TokenKind::Shr,
+            AstPuncKind::BitOr => token_kind == TokenKind::BitOr,
+            AstPuncKind::BitAnd => token_kind == TokenKind::BitAnd,
+            AstPuncKind::BitXor => token_kind == TokenKind::BitXor,
+            AstPuncKind::LogOr => token_kind == TokenKind::LogOr,
+            AstPuncKind::LogAnd => token_kind == TokenKind::LogAnd,
+            AstPuncKind::BitNot => token_kind == TokenKind::BitNot,
+            AstPuncKind::LogNot => token_kind == TokenKind::LogNot,
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct AstKeyword {
-    pub span_low: u32,
+    pub span: Span,
     pub symbol: Symbol,
 }
 
@@ -699,6 +603,7 @@ pub struct AstIdentifier {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AstIdentifierKind {
+    Invalid,
     Symbol(Symbol),
     Composed(AstComposedIdentifier),
 }

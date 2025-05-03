@@ -13,10 +13,6 @@ use unicode_xid::UnicodeXID;
 
 pub fn low_token_iter(mut input: &str) -> impl Iterator<Item = LowToken> + '_ {
     iter_from_fn(move || {
-        if input.is_empty() {
-            return None;
-        }
-
         let token = next(input);
         input = &input[token.len as usize..];
         Some(token)
@@ -25,13 +21,18 @@ pub fn low_token_iter(mut input: &str) -> impl Iterator<Item = LowToken> + '_ {
 
 fn next(input: impl AsRef<str>) -> LowToken {
     let mut cursor = Cursor::new(input.as_ref());
-    let kind = match cursor.consume().unwrap() {
+    let char = match cursor.consume() {
+        Some(char) => char,
+        None => return LowToken::new(LowTokenKind::EndOfFile, 0),
+    };
+
+    let kind = match char {
         char if char.is_whitespace() => {
             consume_while(&mut cursor, |char| char.is_whitespace());
             LowTokenKind::Whitespace
         }
         char if is_id_start(char) => {
-            consume_while(&mut cursor, |char| is_id_continue(char));
+            consume_while(&mut cursor, is_id_continue);
             LowTokenKind::Id
         }
         char @ '0'..='9' => {
@@ -40,7 +41,7 @@ fn next(input: impl AsRef<str>) -> LowToken {
 
             if is_id_start(cursor.first()) {
                 cursor.consume();
-                consume_while(&mut cursor, |char| is_id_continue(char));
+                consume_while(&mut cursor, is_id_continue);
             }
 
             LowTokenKind::NumberLiteral { kind, suffix_start }
@@ -97,17 +98,17 @@ fn consume_comment(cursor: &mut Cursor) {
 }
 
 fn is_id_start(char: char) -> bool {
-    ('a'..='z').contains(&char)
-        || ('A'..='Z').contains(&char)
+    char.is_ascii_lowercase()
+        || char.is_ascii_uppercase()
         || (char == '_')
         || (char > '\x7f' && char.is_xid_start())
 }
 
 fn is_id_continue(char: char) -> bool {
-    ('a'..='z').contains(&char)
-        || ('A'..='Z').contains(&char)
-        || ('0'..='9').contains(&char)
-        || (char == '_')
+    char.is_ascii_lowercase()
+        || char.is_ascii_uppercase()
+        || char.is_ascii_digit()
+        || char == '_'
         || (char > '\x7f' && char.is_xid_continue())
 }
 
@@ -124,14 +125,14 @@ fn consume_literal_number(cursor: &mut Cursor, first_char: char) -> LowTokenNumb
                 consume_while(cursor, |char| char.is_digit(8) || char == '_');
                 LowTokenNumberLiteralKind::IntegerOctal
             }
-            'x' | 'X' if cursor.second().is_digit(16) => {
+            'x' | 'X' if cursor.second().is_ascii_hexdigit() => {
                 cursor.consume();
-                consume_while(cursor, |char| char.is_digit(16) || char == '_');
+                consume_while(cursor, |char| char.is_ascii_hexdigit() || char == '_');
                 LowTokenNumberLiteralKind::IntegerHexadecimal
             }
             '0'..='9' => {
                 cursor.consume();
-                consume_while(cursor, |char| char.is_digit(10) || char == '_');
+                consume_while(cursor, |char| char.is_ascii_digit() || char == '_');
                 LowTokenNumberLiteralKind::IntegerDecimal
             }
             '.' | 'e' | 'E' => LowTokenNumberLiteralKind::IntegerDecimal,
@@ -146,19 +147,19 @@ fn consume_literal_number(cursor: &mut Cursor, first_char: char) -> LowTokenNumb
     }
 
     match cursor.first() {
-        '.' if cursor.second().is_digit(10) => {
+        '.' if cursor.second().is_ascii_digit() => {
             cursor.consume();
-            consume_while(cursor, |char| char.is_digit(10) || char == '_');
+            consume_while(cursor, |char| char.is_ascii_digit() || char == '_');
 
             match (cursor.first(), cursor.second(), cursor.lookup(2)) {
-                ('e' | 'E', '+' | '-', digit) if digit.is_digit(10) => {
+                ('e' | 'E', '+' | '-', digit) if digit.is_ascii_digit() => {
                     cursor.consume();
                     cursor.consume();
-                    consume_while(cursor, |char| char.is_digit(10) || char == '_');
+                    consume_while(cursor, |char| char.is_ascii_digit() || char == '_');
                 }
-                ('e' | 'E', digit, _) if digit.is_digit(10) => {
+                ('e' | 'E', digit, _) if digit.is_ascii_digit() => {
                     cursor.consume();
-                    consume_while(cursor, |char| char.is_digit(10) || char == '_');
+                    consume_while(cursor, |char| char.is_ascii_digit() || char == '_');
                 }
                 _ => {}
             }
@@ -167,8 +168,8 @@ fn consume_literal_number(cursor: &mut Cursor, first_char: char) -> LowTokenNumb
         }
         'e' | 'E'
             if match cursor.second() {
-                '+' | '-' if cursor.lookup(2).is_digit(10) => true,
-                digit if digit.is_digit(10) => true,
+                '+' | '-' if cursor.lookup(2).is_ascii_digit() => true,
+                digit if digit.is_ascii_digit() => true,
                 _ => false,
             } =>
         {
@@ -181,11 +182,11 @@ fn consume_literal_number(cursor: &mut Cursor, first_char: char) -> LowTokenNumb
                 _ => {}
             }
 
-            consume_while(cursor, |char| char.is_digit(10) || char == '_');
+            consume_while(cursor, |char| char.is_ascii_digit() || char == '_');
             LowTokenNumberLiteralKind::Float
         }
         _ => {
-            consume_while(cursor, |char| char.is_digit(10) || char == '_');
+            consume_while(cursor, |char| char.is_ascii_digit() || char == '_');
             LowTokenNumberLiteralKind::IntegerDecimal
         }
     }
@@ -208,6 +209,11 @@ fn consume_literal_string(cursor: &mut Cursor) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_low_token_next_eof() {
+        assert_eq!(next(""), LowToken::new(LowTokenKind::EndOfFile, 0));
+    }
 
     #[test]
     fn test_low_token_next_whitespace() {
@@ -896,9 +902,13 @@ mod tests {
         input: impl AsRef<str>,
         mut expected: impl Iterator<Item = &'a LowToken>,
     ) {
-        let mut iter = low_token_iter(input.as_ref());
+        let iter = low_token_iter(input.as_ref());
 
-        while let Some(token) = iter.next() {
+        for token in iter {
+            if token.kind == LowTokenKind::EndOfFile {
+                break;
+            }
+
             assert_eq!(&token, expected.next().unwrap());
         }
 

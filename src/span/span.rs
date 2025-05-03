@@ -12,6 +12,10 @@ impl Span {
         Self { low, high }
     }
 
+    pub const fn empty(pos: u32) -> Self {
+        Self::new(pos, pos)
+    }
+
     pub const fn low(self) -> u32 {
         self.low
     }
@@ -37,6 +41,10 @@ impl Span {
     }
 
     pub fn expand_to(self, high: u32) -> Self {
+        if high == u32::MAX {
+            return self;
+        }
+
         Self {
             low: self.low,
             high: high.max(self.high),

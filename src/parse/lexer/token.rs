@@ -20,13 +20,20 @@ impl Token {
     pub fn glue(lhs: &Self, rhs: &Self) -> Option<Self> {
         let kind = match (lhs.kind, rhs.kind) {
             (
-                TokenKind::Unknown { symbol: lhs_symbol },
-                TokenKind::Unknown { symbol: rhs_symbol },
+                TokenKind::Unknown {
+                    len: lhs_len,
+                    symbol: lhs_symbol,
+                },
+                TokenKind::Unknown {
+                    len: rhs_len,
+                    symbol: rhs_symbol,
+                },
             ) => {
                 let lhs = lhs_symbol.to_str();
                 let rhs = rhs_symbol.to_str();
                 let symbol = format!("{}{}", lhs, rhs);
                 TokenKind::Unknown {
+                    len: lhs_len + rhs_len,
                     symbol: Symbol::from_str(symbol),
                 }
             }
@@ -315,7 +322,7 @@ mod tests {
         println!("unglueing: {:?}", token);
 
         let mut buf = VecDeque::with_capacity(3);
-        Token::unglue(token.clone(), &mut buf);
+        Token::unglue(token, &mut buf);
 
         for token in &buf {
             println!("- unglued: {:?}", token);

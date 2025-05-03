@@ -1,0 +1,1 @@
+pub const PARSE_ERR_INVALID_COMPTIME: u32 = 1010;

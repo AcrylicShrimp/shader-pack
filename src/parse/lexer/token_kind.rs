@@ -4,8 +4,10 @@ use crate::symbol::Symbol;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenKind {
     Unknown {
+        len: u32,
         symbol: Symbol,
     },
+    EndOfFile,
     Whitespace {
         len: u32,
     },
@@ -62,12 +64,15 @@ pub enum TokenKind {
     BitNot, // "~"
     LogNot, // "!"
     Id {
+        len: u32,
         symbol: Symbol,
     },
     BoolLiteral {
+        len: u32,
         content: Symbol,
     },
     NumberLiteral {
+        len: u32,
         kind: TokenNumberLiteralKind,
         /// The content of the number literal without the suffix.
         ///
@@ -81,6 +86,11 @@ pub enum TokenKind {
         suffix: Option<Symbol>,
     },
     StringLiteral {
+        /// The length of the string literal including the quotes.
+        ///
+        /// Example:
+        /// - `"hello"` -> 7
+        len: u32,
         /// The content of the string literal with the quotes.
         ///
         /// Example:
@@ -109,7 +119,8 @@ pub enum TokenKind {
 impl TokenKind {
     pub fn len(self) -> u32 {
         match self {
-            Self::Unknown { symbol } => symbol.to_str().len() as u32,
+            Self::Unknown { len, .. } => len,
+            Self::EndOfFile => 0,
             Self::Whitespace { len } => len,
             Self::Comment { len } => len,
             Self::OpenParen => 1,
@@ -157,16 +168,10 @@ impl TokenKind {
             Self::LogAnd => 2,
             Self::BitNot => 1,
             Self::LogNot => 1,
-            Self::Id { symbol } => symbol.to_str().len() as u32,
-            Self::BoolLiteral { content } => content.to_str().len() as u32,
-            Self::NumberLiteral {
-                content, suffix, ..
-            } => {
-                let content_len = content.to_str().len();
-                let suffix_len = suffix.map_or(0, |s| s.to_str().len());
-                (content_len + suffix_len) as u32
-            }
-            Self::StringLiteral { content, .. } => content.to_str().len() as u32,
+            Self::Id { len, .. } => len,
+            Self::BoolLiteral { len, .. } => len,
+            Self::NumberLiteral { len, .. } => len,
+            Self::StringLiteral { len, .. } => len,
         }
     }
 }

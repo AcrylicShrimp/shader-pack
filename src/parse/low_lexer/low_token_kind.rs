@@ -3,6 +3,7 @@ use super::LowTokenNumberLiteralKind;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LowTokenKind {
     Unknown,
+    EndOfFile,
     Whitespace,
     Comment,      // "#"
     OpenParen,    // "("

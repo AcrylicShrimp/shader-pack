@@ -58,9 +58,11 @@ fn from_low_token(token: LowToken, span_low: u32, file: &SourceFile) -> Token {
         LowTokenKind::Unknown => {
             let span = Span::new(span_low, span_low + token.len);
             TokenKind::Unknown {
+                len: token.len,
                 symbol: Symbol::from_str(file.slice(span)),
             }
         }
+        LowTokenKind::EndOfFile => TokenKind::EndOfFile,
         LowTokenKind::Whitespace => TokenKind::Whitespace { len: token.len },
         LowTokenKind::Comment => TokenKind::Comment { len: token.len },
         LowTokenKind::OpenParen => TokenKind::OpenParen,
@@ -91,9 +93,11 @@ fn from_low_token(token: LowToken, span_low: u32, file: &SourceFile) -> Token {
             let span = Span::new(span_low, span_low + token.len);
             match file.slice(span) {
                 content @ ("true" | "false") => TokenKind::BoolLiteral {
+                    len: token.len,
                     content: Symbol::from_str(content),
                 },
                 id => TokenKind::Id {
+                    len: token.len,
                     symbol: Symbol::from_str(id),
                 },
             }
@@ -113,6 +117,7 @@ fn from_low_token(token: LowToken, span_low: u32, file: &SourceFile) -> Token {
             let content_without_suffix = &content[..suffix_start as usize];
             let suffix = &content[suffix_start as usize..];
             TokenKind::NumberLiteral {
+                len: token.len,
                 kind,
                 content: Symbol::from_str(content_without_suffix),
                 suffix: if suffix.is_empty() {
@@ -134,6 +139,7 @@ fn from_low_token(token: LowToken, span_low: u32, file: &SourceFile) -> Token {
                 },
             ));
             TokenKind::StringLiteral {
+                len: token.len,
                 content: Symbol::from_str(content),
                 unquoted_content: Symbol::from_str(unquoted_content),
                 terminated,
@@ -148,19 +154,33 @@ mod tests {
     use super::*;
     use rand::Rng;
 
+    #[test]
+    fn test_token_iter_never_ends() {
+        let file = SourceFile::new(0, "", "test", None);
+        let mut iter = token_iter(&file);
+
+        for _ in 0..1000 {
+            assert!(iter.next() == Some(Token::new(0, TokenKind::EndOfFile)));
+        }
+    }
+
     fn random_span_low() -> u32 {
         rand::thread_rng().gen_range(0..u32::MAX / 2)
     }
 
-    fn check_tokens<'a>(
+    fn check_tokens(
         mut span_low: u32,
         input: impl AsRef<str>,
         mut expected: impl Iterator<Item = TokenKind>,
     ) {
         let file = SourceFile::new(span_low, input.as_ref(), "test", None);
-        let mut iter = token_iter(&file);
+        let iter = token_iter(&file);
 
-        while let Some(token) = iter.next() {
+        for token in iter {
+            if token.kind == TokenKind::EndOfFile {
+                break;
+            }
+
             assert_eq!(&token, &Token::new(span_low, expected.next().unwrap()));
             span_low += token.kind.len();
         }
@@ -181,6 +201,7 @@ mod tests {
             span_low,
             "$$$",
             [TokenKind::Unknown {
+                len: 3,
                 symbol: Symbol::from_str("$$$"),
             }]
             .into_iter(),
@@ -205,12 +226,14 @@ mod tests {
             "\"hello, world!\" \"\\t\\r\\n\"",
             [
                 TokenKind::StringLiteral {
+                    len: 15,
                     content: Symbol::from_str("\"hello, world!\""),
                     unquoted_content: Symbol::from_str("hello, world!"),
                     terminated: true,
                 },
                 TokenKind::Whitespace { len: 1 },
                 TokenKind::StringLiteral {
+                    len: 8,
                     content: Symbol::from_str("\"\\t\\r\\n\""),
                     unquoted_content: Symbol::from_str("\\t\\r\\n"),
                     terminated: true,
@@ -277,50 +300,59 @@ mod tests {
                 TokenKind::BitNot,
                 TokenKind::LogNot,
                 TokenKind::Id {
+                    len: 10,
                     symbol: Symbol::from_str("identifier"),
                 },
                 TokenKind::Whitespace { len: 1 },
                 TokenKind::Id {
+                    len: 7,
                     symbol: Symbol::from_str("keyword"),
                 },
                 TokenKind::Whitespace { len: 1 },
                 TokenKind::NumberLiteral {
+                    len: 13,
                     kind: TokenNumberLiteralKind::IntegerBinary,
                     content: Symbol::from_str("0b01_01"),
                     suffix: Some(Symbol::from_str("suffix")),
                 },
                 TokenKind::Whitespace { len: 1 },
                 TokenKind::NumberLiteral {
+                    len: 17,
                     kind: TokenNumberLiteralKind::IntegerOctal,
                     content: Symbol::from_str("0o01234_567"),
                     suffix: Some(Symbol::from_str("suffix")),
                 },
                 TokenKind::Whitespace { len: 1 },
                 TokenKind::NumberLiteral {
+                    len: 25,
                     kind: TokenNumberLiteralKind::IntegerHexadecimal,
                     content: Symbol::from_str("0x0123456789_abcdef"),
                     suffix: Some(Symbol::from_str("suffix")),
                 },
                 TokenKind::Whitespace { len: 1 },
                 TokenKind::NumberLiteral {
+                    len: 17,
                     kind: TokenNumberLiteralKind::IntegerDecimal,
                     content: Symbol::from_str("01234_56789"),
                     suffix: Some(Symbol::from_str("suffix")),
                 },
                 TokenKind::Whitespace { len: 1 },
                 TokenKind::NumberLiteral {
+                    len: 39,
                     kind: TokenNumberLiteralKind::Float,
                     content: Symbol::from_str("0123456789.0123456789e-0123456789"),
                     suffix: Some(Symbol::from_str("suffix")),
                 },
                 TokenKind::Whitespace { len: 1 },
                 TokenKind::StringLiteral {
+                    len: 14,
                     content: Symbol::from_str("\"hello, world\""),
                     unquoted_content: Symbol::from_str("hello, world"),
                     terminated: true,
                 },
                 TokenKind::Whitespace { len: 1 },
                 TokenKind::StringLiteral {
+                    len: 13,
                     content: Symbol::from_str("\"hello, world"),
                     unquoted_content: Symbol::from_str("hello, world"),
                     terminated: false,

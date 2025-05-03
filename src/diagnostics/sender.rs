@@ -18,12 +18,12 @@ impl ItemSender {
         self.file.clone()
     }
 
-    pub fn hint(&self, span: Span, message: String) {
+    pub fn hint(&self, span: Span, message: impl Into<String>) {
         self.sender
             .send(Item {
                 code: 0,
                 level: ItemLevel::Hint,
-                message,
+                message: message.into(),
                 origin: Some(ItemOrigin {
                     file: self.file.clone(),
                     span,
@@ -33,12 +33,12 @@ impl ItemSender {
             .unwrap();
     }
 
-    pub fn hint_sub(&self, span: Span, message: String, sub_items: Vec<SubItem>) {
+    pub fn hint_sub(&self, span: Span, message: impl Into<String>, sub_items: Vec<SubItem>) {
         self.sender
             .send(Item {
                 code: 0,
                 level: ItemLevel::Hint,
-                message,
+                message: message.into(),
                 origin: Some(ItemOrigin {
                     file: self.file.clone(),
                     span,
@@ -48,24 +48,24 @@ impl ItemSender {
             .unwrap();
     }
 
-    pub fn hint_simple(&self, message: String) {
+    pub fn hint_simple(&self, message: impl Into<String>) {
         self.sender
             .send(Item {
                 code: 0,
                 level: ItemLevel::Hint,
-                message,
+                message: message.into(),
                 origin: None,
                 sub_items: vec![],
             })
             .unwrap()
     }
 
-    pub fn warning(&self, code: u32, span: Span, message: String) {
+    pub fn warning(&self, code: u32, span: Span, message: impl Into<String>) {
         self.sender
             .send(Item {
                 code,
                 level: ItemLevel::Warning,
-                message,
+                message: message.into(),
                 origin: Some(ItemOrigin {
                     file: self.file.clone(),
                     span,
@@ -75,12 +75,18 @@ impl ItemSender {
             .unwrap()
     }
 
-    pub fn warning_sub(&self, code: u32, span: Span, message: String, sub_items: Vec<SubItem>) {
+    pub fn warning_sub(
+        &self,
+        code: u32,
+        span: Span,
+        message: impl Into<String>,
+        sub_items: Vec<SubItem>,
+    ) {
         self.sender
             .send(Item {
                 code,
                 level: ItemLevel::Warning,
-                message,
+                message: message.into(),
                 origin: Some(ItemOrigin {
                     file: self.file.clone(),
                     span,
@@ -90,24 +96,24 @@ impl ItemSender {
             .unwrap()
     }
 
-    pub fn warning_simple(&self, code: u32, message: String) {
+    pub fn warning_simple(&self, code: u32, message: impl Into<String>) {
         self.sender
             .send(Item {
                 code,
                 level: ItemLevel::Warning,
-                message,
+                message: message.into(),
                 origin: None,
                 sub_items: vec![],
             })
             .unwrap()
     }
 
-    pub fn error(&self, code: u32, span: Span, message: String) {
+    pub fn error(&self, code: u32, span: Span, message: impl Into<String>) {
         self.sender
             .send(Item {
                 code,
                 level: ItemLevel::Error,
-                message,
+                message: message.into(),
                 origin: Some(ItemOrigin {
                     file: self.file.clone(),
                     span,
@@ -117,12 +123,18 @@ impl ItemSender {
             .unwrap()
     }
 
-    pub fn error_sub(&self, code: u32, span: Span, message: String, sub_items: Vec<SubItem>) {
+    pub fn error_sub(
+        &self,
+        code: u32,
+        span: Span,
+        message: impl Into<String>,
+        sub_items: Vec<SubItem>,
+    ) {
         self.sender
             .send(Item {
                 code,
                 level: ItemLevel::Error,
-                message,
+                message: message.into(),
                 origin: Some(ItemOrigin {
                     file: self.file.clone(),
                     span,
@@ -132,22 +144,22 @@ impl ItemSender {
             .unwrap()
     }
 
-    pub fn error_simple(&self, code: u32, message: String) {
+    pub fn error_simple(&self, code: u32, message: impl Into<String>) {
         self.sender
             .send(Item {
                 code,
                 level: ItemLevel::Error,
-                message,
+                message: message.into(),
                 origin: None,
                 sub_items: vec![],
             })
             .unwrap()
     }
 
-    pub fn sub_hint(&self, span: Span, message: String) -> SubItem {
+    pub fn sub_hint(&self, span: Span, message: impl Into<String>) -> SubItem {
         SubItem {
             level: ItemLevel::Hint,
-            message,
+            message: message.into(),
             origin: Some(ItemOrigin {
                 file: self.file.clone(),
                 span,
@@ -155,18 +167,18 @@ impl ItemSender {
         }
     }
 
-    pub fn sub_hint_simple(&self, message: String) -> SubItem {
+    pub fn sub_hint_simple(&self, message: impl Into<String>) -> SubItem {
         SubItem {
             level: ItemLevel::Hint,
-            message,
+            message: message.into(),
             origin: None,
         }
     }
 
-    pub fn sub_warning(&self, span: Span, message: String) -> SubItem {
+    pub fn sub_warning(&self, span: Span, message: impl Into<String>) -> SubItem {
         SubItem {
             level: ItemLevel::Warning,
-            message,
+            message: message.into(),
             origin: Some(ItemOrigin {
                 file: self.file.clone(),
                 span,
@@ -174,18 +186,18 @@ impl ItemSender {
         }
     }
 
-    pub fn sub_warning_simple(&self, message: String) -> SubItem {
+    pub fn sub_warning_simple(&self, message: impl Into<String>) -> SubItem {
         SubItem {
             level: ItemLevel::Warning,
-            message,
+            message: message.into(),
             origin: None,
         }
     }
 
-    pub fn sub_error(&self, span: Span, message: String) -> SubItem {
+    pub fn sub_error(&self, span: Span, message: impl Into<String>) -> SubItem {
         SubItem {
             level: ItemLevel::Error,
-            message,
+            message: message.into(),
             origin: Some(ItemOrigin {
                 file: self.file.clone(),
                 span,
@@ -193,10 +205,10 @@ impl ItemSender {
         }
     }
 
-    pub fn sub_error_simple(&self, message: String) -> SubItem {
+    pub fn sub_error_simple(&self, message: impl Into<String>) -> SubItem {
         SubItem {
             level: ItemLevel::Error,
-            message,
+            message: message.into(),
             origin: None,
         }
     }
